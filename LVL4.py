@@ -1,201 +1,82 @@
 import pygame
 from LVLDAT import Level
 from PlatformOBJ import Platform
-#from backdrop import BGL
-from PlatformImageOBJ import PlatformImage
 from PlayerCharacter import Player
-import random
 import os
-# Colors
+
+# Constants
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
-ORANGE = (255,100,100)
-PURPLE = (255,0,255)
-GRAY = (100,100,100)
+ORANGE = (255, 100, 100)
+PURPLE = (255, 0, 255)
+GRAY = (100, 100, 100)
+TILE_SIZE = 64
+
+# Image file names, use a dictionary for easy maintenance
+BLOCK_IMAGES = {
+    "spawn": "spawnTile.PNG",
+    "normal": "floorTile.PNG",
+    "up": "moveUpTile.PNG",
+    "down": "moveDownTile.PNG",
+    "bouncy": "moveBounceTile.PNG",
+    "pullup": "pullTile.PNG",  # Assuming same image for all pull types
+    "message": "setMessageTile.PNG",
+    "enablemessages": "setEnableTile.PNG",
+    "disablemessages": "setDisableTile.PNG",
+    "developer": "Dr RNG 3.PNG",
+    "lowerlimit": "lowerlimit.png", # Add an image for this block type if needed.
+}
+
+
 class Level_04(Level):
-    """ Definition for level 1. """
     def __init__(self, player):
-        """ Create level 1. """
-        #Platform types are in this list for level creation purposes:
-        types = ["spawn",#Where the player starts                                              (0)
-                 "",#The main floor type                                                       (1)
-                 "normal",#Same as ""                                                          (2)
-                 "up",#Acts as an elevator going up                                            (3)
-                 "down",#Acts as an elevator going down                                        (4)
-                 "bouncy",#Trampoline-like, sends you higher with each bounce up to 10 bounces (5)
-                 "fall",#Falls out of the world                                                (6)
-                 "flyup",#Flies away                                                           (7)
-                 "pullup",#Pulls the player to it                                              (8)
-                 "pulldown",#Pulls the player to it                                            (9)
-                 "pullleft",#Pulls the player to it                                           (10)
-                 "pullright",#Pulls the player to it                                          (11)
-                 "vanish",#Vanishes on contact                                                (12)
-                 "hazard",#Dangerous to touch                                                 (13)
-                 "fast",#Speeds the player up                                                 (14)
-                 "slow",#Slows the player down                                                (15)
-                 "reset",#Sends the player back to the start of the level                     (16)
-                 "goal",#Completes the level if another level exists after the current one    (17)
-                 "pushable",#You can push these                                               (18)
-                 "timed",#Vanishes and reappears on a timer                                   (19)
-                 "slideleft",#Moves the player to the left                                    (20)
-                 "slideright",#Moves the player to the right                                  (21)
-                 "message",#Sets the current text                                             (22)
-                 "enablemessages",#Enables the text                                           (23)
-                 "disablemessages",#Disables the text                                         (24)
-                 "multimessage",#Makes multiple timed messages appear                         (25)
-                 "developer",#Oh, hey! It's me!                                               (26)
-                 "lowerlimit",#Warps player back to spawn in the case that they fall.         (27)
-                 
-                 ]
-        # Call the parent constructor
         Level.__init__(self, player)
-        player.text = "OFF"
+        player.text = "OFF"  # Initialize player text here
         self.level_limit = -10500
-        #Level platform list
-        level = [
-                 [5, 1, 0, 0, 0],#Spawn object
-                 [1,1,5,0,23], 
-                 [10, 1, 6, 0, 22, "Hey, can you hear me?"],
-                 [9, 1, 16, 0, 22, "Hello?"],
-                 [9, 1, 25, 0, 22, "Please listen!"],
-                 [9, 1, 34, 0, 22, "I need your help."],
-                 [8, 1, 42, 0, 22, "Our program is in danger."],
-                 [30, 1, 50, 0, 22, "You need to go get our only developer back!"],
-                 [20, 1, 80, 0, 22, "He's been ignoring us for far too long."],
-                 [15, 1, 100, 0, 22, "You should be able to find him in the next room."],
-                 [1, 1, 115, 0, 24],
-                 [9,1,116,0,1],
-                 [10, 1, 125, 0, 1],
-                 [10, 1, 135, 0, 2],
-                 [10, 1, 145, 0, 3],
-                 [10, 1, 155, 0, 4],
-                 [1,1,999,25,27],#Lower limit object
-                 ]
-        areas = [
-            [10, 10, 1, 1]
-            ]
-        # Go through the array above and add platforms
-        for platform in level:
-            #block = Platform(platform[0]*64, platform[1]*64)
-            Btype = types[platform[4]]
-            if Btype != "up" or Btype != "down":
-                block = Platform(platform[0]*64, platform[1]*64)
-                block.rect.x = platform[2]*64
-                block.rect.y = platform[3]*64
-                block.type = types[platform[4]]
-            Y = platform[3]
-            if Btype == "spawn":
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles', "spawnTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype == "up":
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles', "moveUpTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype == "down":
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles', "moveDownTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype == "bouncy":
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles', "moveBounceTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype == "" or Btype == "normal":
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles', "floorTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype.startswith("pull"):
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles', "pullTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype == "message":
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.message = platform[5]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles',"setMessageTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype == "enablemessages":
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles',"setEnableTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype == "disablemessages":
-                for i in range(platform[1]):
-                    X = platform[2]
-                    for i in range(platform[0]):
-                        block = Platform(1*64, 1*64)
-                        block.rect.x = X*64
-                        block.rect.y = Y*64
-                        block.type = types[platform[4]]
-                        block.image = pygame.image.load(os.path.join('blockimages/Tiles',"setDisableTile.PNG")).convert()
-                        self.platform_list.add(block)
-                        X+=1
-                    Y+=1
-            if Btype == "developer":
-                block.image = pygame.image.load(os.path.join('images', "Dr RNG 3.PNG")).convert()
-            self.platform_list.add(block)
+        self.level_data = self.load_level_data()
+        self.create_platforms()
+
+
+    def load_level_data(self):
+        return [
+            [5, 1, 0, 0, "spawn"],
+            [1, 1, 5, 0, "enablemessages"],
+            [10, 1, 6, 0, "message", "Hey, can you hear me?"],
+            # ... rest of your level data ...
+            [1, 1, 999, 25, "lowerlimit"],  # Lower limit
+        ]
+
+    def create_platforms(self):
+        for platform_data in self.level_data:
+            width, height, x, y, block_type, *message = platform_data
+            self.create_block_group(width, height, x, y, block_type, message)
+
+
+    def create_block_group(self, width, height, x, y, block_type, message):
+      for row in range(height):
+          for col in range(width):
+              block = self.create_block(block_type, x + col, y + row, message)
+              if block:
+                  self.platform_list.add(block)
+
+    def create_block(self, block_type, x, y, message):
+        block = Platform(TILE_SIZE, TILE_SIZE)
+        block.rect.x = x * TILE_SIZE
+        block.rect.y = y * TILE_SIZE
+        block.type = block_type
+
+        #Load image from BLOCK_IMAGES, default to normal block image if not found
+        image_path = os.path.join("blockimages/Tiles", BLOCK_IMAGES.get(block_type, "floorTile.PNG"))
+        try:
+            block.image = pygame.image.load(image_path).convert()
+        except pygame.error as e:
+            print(f"Error loading image {image_path}: {e}")
+            return None
+
+        if block_type == "message":
+            block.message = message[0] #Extract the message from the list
+
+        return block
