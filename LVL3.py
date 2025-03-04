@@ -1,83 +1,83 @@
 import pygame
+import os
 from LVLDAT import Level
 from PlatformOBJ import Platform
-from PlatformImageOBJ import PlatformImage
-from PlayerCharacter import Player
-import random
-import os
 
-# Constants
+# Colors
 BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-ORANGE = (255, 100, 100)
-PURPLE = (255, 0, 255)
-GRAY = (100, 100, 100)
-TILE_SIZE = 64  # Assuming 64x64 tiles
-
-
-# Dictionary mapping block types to image filenames.  This is crucial for reducing duplication.
-BLOCK_IMAGES = {
-    "spawn": "spawnTile.PNG",
-    "normal": "floorTile.PNG",
-    "up": "moveUpTile.PNG",
-    "down": "moveDownTile.PNG",
-    "bouncy": "moveBounceTile.PNG",
-    "pullup": "pullTile.PNG",
-    "pulldown": "pullTile.PNG",
-    "pullleft": "pullTile.PNG",
-    "pullright": "pullTile.PNG",
-    "message": "setMessageTile.PNG",
-    "enablemessages": "setEnableTile.PNG",
-    "disablemessages": "setDisableTile.PNG",
-    "suffer": "sufferTile.PNG",
-    "developer": "Dr RNG 3.PNG",
-    # Add other block types and image names here as needed...
-}
-
 
 class Level_03(Level):
-    def __init__(self, player):
-        Level.__init__(self, player)
-        self.level_limit = -5500
-        self.level_data = self.load_level_data()
-        self.create_platforms()
+    """Definition for Level 3."""
 
-    def load_level_data(self):
-        return [
-            [1, 1, 0, 0, "spawn"],
-            [8, 10, 1, 0, "normal"],
-            [1, 10, 9, 0, "normal"],
-            [25, 6, 5, 5, "normal"],
-            [25, 1, 30, 5, "bouncy"],
-            [4, 8, 55, 5, "down"],
-            [11, 8, 59, 3, "up"],
-            [1, 1, 255, 255, "lowerlimit"],  #Respawn zone
-            [22, 2, 255, 255, "suffer"],
+    def __init__(self, player):
+        """Initialize Level 3."""
+        super().__init__(player)
+        self.level_limit = -5500
+
+        # Platform types mapping to image files
+        platform_images = {
+            "spawn": "spawnTile.PNG",
+            "up": "moveUpTile.PNG",
+            "down": "moveDownTile.PNG",
+            "bouncy": "moveBounceTile.PNG",
+            "normal": "floorTile.PNG",
+            "": "floorTile.PNG",
+            "pullup": "pullTile.PNG",
+            "pulldown": "pullTile.PNG",
+            "pullleft": "pullTile.PNG",
+            "pullright": "pullTile.PNG",
+            "message": "setMessageTile.PNG",
+            "enablemessages": "setEnableTile.PNG",
+            "disablemessages": "setDisableTile.PNG",
+            "suffer": "sufferTile.PNG",
+            "developer": "Dr RNG 3.PNG"
+        }
+
+        # Platform types list
+        platform_types = [
+            "spawn", "", "normal", "up", "down", "bouncy", "fall",
+            "flyup", "pullup", "pulldown", "pullleft", "pullright",
+            "vanish", "hazard", "fast", "slow", "reset", "goal",
+            "pushable", "timed", "slideleft", "slideright",
+            "message", "enablemessages", "disablemessages",
+            "multimessage", "developer", "lowerlimit", "suffer"
         ]
 
+        # Level platform list (Format: width, height, x, y, type)
+        level_data = [
+            (1, 1, 0, 0, 0),
+            (8, 10, 1, 0, 1),
+            (1, 10, 9, 0, 1),
+            (25, 6, 5, 5, 1),
+            (25, 1, 30, 5, 5),
+            (4, 8, 55, 5, 4),
+            (11, 8, 59, 3, 3),
+            (1, 1, 255, 255, 27),
+            (22, 2, 255, 255, 28),
+        ]
 
-    def create_platforms(self):
-        for platform_data in self.level_data:
-            width, height, x, y, block_type = platform_data
-            for row in range(height):
-                for col in range(width):
-                    block = self.create_block(block_type, x + col, y + row)
-                    if block: #Check if block was created successfully
-                        self.platform_list.add(block)
+        # Process level data
+        for width, height, x, y, type_index in level_data:
+            platform_type = self.get_platform_type(platform_types, type_index)
+            self.create_platform(width, height, x, y, platform_type, platform_images, player)
 
-    def create_block(self, block_type, x, y):
-        block = Platform(TILE_SIZE, TILE_SIZE)
-        block.rect.x = x * TILE_SIZE
-        block.rect.y = y * TILE_SIZE
-        block.type = block_type
-        image_path = os.path.join('blockimages/Tiles', BLOCK_IMAGES.get(block_type, "floorTile.PNG")) #default image
-        try:
-            block.image = pygame.image.load(image_path).convert()
-        except pygame.error as e:
-            print(f"Error loading image {image_path}: {e}")
-            return None  # Return None if image loading fails
+    def get_platform_type(self, platform_types, index):
+        """Returns the platform type based on its index."""
+        return platform_types[index] if index < len(platform_types) else ""
 
-        return block
+    def create_platform(self, width, height, x, y, platform_type, platform_images, player):
+        """Creates and adds platforms based on type."""
+        img_file = platform_images.get(platform_type, "floorTile.PNG")
+
+        for row in range(height):
+            for col in range(width):
+                block = Platform(64, 64)
+                block.rect.x = (x + col) * 64
+                block.rect.y = (y + row) * 64
+                block.type = platform_type
+                block.image = pygame.image.load(os.path.join('blockimages/Tiles', img_file)).convert()
+
+                if platform_type == "spawn":
+                    player.rect.bottom = block.rect.top  # Set spawn position
+
+                self.platform_list.add(block)

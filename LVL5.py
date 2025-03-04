@@ -1,81 +1,94 @@
 import pygame
+import os
 from LVLDAT import Level
 from PlatformOBJ import Platform
-from PlayerCharacter import Player
-import os
 
-# Constants
+# Colors
 BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-ORANGE = (255, 100, 100)
-PURPLE = (255, 0, 255)
-GRAY = (100, 100, 100)
-TILE_SIZE = 64
-
-# Image file names (Use a dictionary for easier management)
-BLOCK_IMAGES = {
-    "spawn": "spawnTile.PNG",
-    "normal": "floorTile.PNG",
-    "up": "moveUpTile.PNG",
-    "down": "moveDownTile.PNG",
-    "bouncy": "moveBounceTile.PNG",
-    "pullup": "pullTile.PNG",
-    "message": "setMessageTile.PNG",
-    "enablemessages": "setEnableTile.PNG",
-    "disablemessages": "setDisableTile.PNG",
-    "flyingplatform": "FlyingPlatform.PNG",
-    "lowerlimit": "lowerlimit.png", # Add image for this block if needed
-    # Add more block types and their corresponding image names
-}
-
 
 class Level_05(Level):
+    """Definition for Level 5."""
+
     def __init__(self, player):
-        Level.__init__(self, player)
+        """Initialize Level 5."""
+        super().__init__(player)
         player.text = "OFF"
         self.level_limit = -250000
-        self.level_data = self.load_level_data()
-        self.create_platforms()
 
-    def load_level_data(self):
-        return [
-            [6, 26, -6, -25, "normal"],
-            [5, 1, 1, 0, "enablemessages"],
-            [5, 1, 1, 0, "message", "This game is an absolute mess."],
-            # ... rest of your level data ...
-            [1, 1, 0, 0, "lowerlimit"],
-            [1,1,5,-5,"flyingplatform"],
+        # Platform types mapping to image files
+        platform_images = {
+            "spawn": "spawnTile.PNG",
+            "up": "moveUpTile.PNG",
+            "down": "moveDownTile.PNG",
+            "bouncy": "moveBounceTile.PNG",
+            "normal": "floorTile.PNG",
+            "": "floorTile.PNG",
+            "pullup": "pullTile.PNG",
+            "pulldown": "pullTile.PNG",
+            "pullleft": "pullTile.PNG",
+            "pullright": "pullTile.PNG",
+            "message": "setMessageTile.PNG",
+            "enablemessages": "setEnableTile.PNG",
+            "disablemessages": "setDisableTile.PNG",
+            "flyingplatform": "FlyingPlatform.PNG",
+        }
+
+        # Platform types list
+        platform_types = [
+            "spawn", "", "normal", "up", "down", "bouncy", "fall",
+            "flyup", "pullup", "pulldown", "pullleft", "pullright",
+            "vanish", "hazard", "fast", "slow", "reset", "goal",
+            "pushable", "timed", "slideleft", "slideright",
+            "message", "enablemessages", "disablemessages",
+            "multimessage", "flyingplatform", "lowerlimit",
+            "fpenable", "fpdisable"
         ]
 
+        # Level platform list (Format: width, height, x, y, type, optional message)
+        level_data = [
+            (6, 26, -6, -25, 1),
+            (5, 1, 1, 0, 23),
+            (5, 1, 1, 0, 22, "This game is an absolute mess."),
+            (6, 23, 6, -25, 1),
+            (5, 1, 6, -4, 8),
+            (5, 1, 11, 6, 22, "There's no point in continuing work on it."),
+            (1, 5, 16, 2, 11),
+            (1, 1, 15, 0, 8),
+            (1, 1, 16, 0, 22, "Please stop trying to make me develop this trash."),
+            (10, 1, 16, 2, 1),
+            (1, 1, 26, 1, 11),
+            (1, 1, 26, -1, 8),
+            (1, 1, 0, 0, 27),
+            (1, 1, 5, -5, 26),
+            (1, 1, 0, 0, 0),
+        ]
 
-    def create_platforms(self):
-        for platform_data in self.level_data:
-            self.create_platform_group(*platform_data)
+        # Process level data
+        for platform in level_data:
+            width, height, x, y, type_index, *optional_msg = platform
+            platform_type = self.get_platform_type(platform_types, type_index)
+            self.create_platform(width, height, x, y, platform_type, platform_images, optional_msg, player)
 
-    def create_platform_group(self, width, height, x, y, block_type, *message):
+    def get_platform_type(self, platform_types, index):
+        """Returns the platform type based on its index."""
+        return platform_types[index] if index < len(platform_types) else ""
+
+    def create_platform(self, width, height, x, y, platform_type, platform_images, optional_msg, player):
+        """Creates and adds platforms based on type."""
+        img_file = platform_images.get(platform_type, "floorTile.PNG")
+
         for row in range(height):
             for col in range(width):
-                block = self.create_block(block_type, x + col, y + row, message)
-                if block:
-                    self.platform_list.add(block)
+                block = Platform(64, 64)
+                block.rect.x = (x + col) * 64
+                block.rect.y = (y + row) * 64
+                block.type = platform_type
+                block.image = pygame.image.load(os.path.join('blockimages/Tiles', img_file)).convert()
 
-    def create_block(self, block_type, x, y, message):
-        block = Platform(TILE_SIZE, TILE_SIZE)
-        block.rect.x = x * TILE_SIZE
-        block.rect.y = y * TILE_SIZE
-        block.type = block_type
+                if platform_type == "spawn":
+                    player.rect.bottom = block.rect.top  # Set spawn position
 
-        image_path = os.path.join("blockimages/Tiles", BLOCK_IMAGES.get(block_type, "floorTile.PNG"))
-        try:
-            block.image = pygame.image.load(image_path).convert()
-        except pygame.error as e:
-            print(f"Error loading image {image_path}: {e}")
-            return None
+                if platform_type == "message" and optional_msg:
+                    block.message = optional_msg[0]
 
-        if block_type == "message":
-            block.message = message[0] if message else ""
-
-        return block
+                self.platform_list.add(block)

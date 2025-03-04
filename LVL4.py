@@ -1,82 +1,95 @@
 import pygame
+import os
 from LVLDAT import Level
 from PlatformOBJ import Platform
-from PlayerCharacter import Player
-import os
 
-# Constants
+# Colors
 BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-ORANGE = (255, 100, 100)
-PURPLE = (255, 0, 255)
-GRAY = (100, 100, 100)
-TILE_SIZE = 64
-
-# Image file names, use a dictionary for easy maintenance
-BLOCK_IMAGES = {
-    "spawn": "spawnTile.PNG",
-    "normal": "floorTile.PNG",
-    "up": "moveUpTile.PNG",
-    "down": "moveDownTile.PNG",
-    "bouncy": "moveBounceTile.PNG",
-    "pullup": "pullTile.PNG",  # Assuming same image for all pull types
-    "message": "setMessageTile.PNG",
-    "enablemessages": "setEnableTile.PNG",
-    "disablemessages": "setDisableTile.PNG",
-    "developer": "Dr RNG 3.PNG",
-    "lowerlimit": "lowerlimit.png", # Add an image for this block type if needed.
-}
-
 
 class Level_04(Level):
+    """Definition for Level 4."""
+
     def __init__(self, player):
-        Level.__init__(self, player)
-        player.text = "OFF"  # Initialize player text here
+        """Initialize Level 4."""
+        super().__init__(player)
+        player.text = "OFF"
         self.level_limit = -10500
-        self.level_data = self.load_level_data()
-        self.create_platforms()
 
+        # Platform types mapping to image files
+        platform_images = {
+            "spawn": "spawnTile.PNG",
+            "up": "moveUpTile.PNG",
+            "down": "moveDownTile.PNG",
+            "bouncy": "moveBounceTile.PNG",
+            "normal": "floorTile.PNG",
+            "": "floorTile.PNG",
+            "pullup": "pullTile.PNG",
+            "pulldown": "pullTile.PNG",
+            "pullleft": "pullTile.PNG",
+            "pullright": "pullTile.PNG",
+            "message": "setMessageTile.PNG",
+            "enablemessages": "setEnableTile.PNG",
+            "disablemessages": "setDisableTile.PNG",
+            "developer": "Dr RNG 3.PNG",
+        }
 
-    def load_level_data(self):
-        return [
-            [5, 1, 0, 0, "spawn"],
-            [1, 1, 5, 0, "enablemessages"],
-            [10, 1, 6, 0, "message", "Hey, can you hear me?"],
-            # ... rest of your level data ...
-            [1, 1, 999, 25, "lowerlimit"],  # Lower limit
+        # Platform types list
+        platform_types = [
+            "spawn", "", "normal", "up", "down", "bouncy", "fall",
+            "flyup", "pullup", "pulldown", "pullleft", "pullright",
+            "vanish", "hazard", "fast", "slow", "reset", "goal",
+            "pushable", "timed", "slideleft", "slideright",
+            "message", "enablemessages", "disablemessages",
+            "multimessage", "developer", "lowerlimit"
         ]
 
-    def create_platforms(self):
-        for platform_data in self.level_data:
-            width, height, x, y, block_type, *message = platform_data
-            self.create_block_group(width, height, x, y, block_type, message)
+        # Level platform list (Format: width, height, x, y, type, optional message)
+        level_data = [
+            (5, 1, 0, 0, 0),  # Spawn object
+            (1, 1, 5, 0, 23), 
+            (10, 1, 6, 0, 22, "Hey, can you hear me?"),
+            (9, 1, 16, 0, 22, "Hello?"),
+            (9, 1, 25, 0, 22, "Please listen!"),
+            (9, 1, 34, 0, 22, "I need your help."),
+            (8, 1, 42, 0, 22, "Our program is in danger."),
+            (30, 1, 50, 0, 22, "You need to go get our only developer back!"),
+            (20, 1, 80, 0, 22, "He's been ignoring us for far too long."),
+            (15, 1, 100, 0, 22, "You should be able to find him in the next room."),
+            (1, 1, 115, 0, 24),
+            (9, 1, 116, 0, 1),
+            (10, 1, 125, 0, 1),
+            (10, 1, 135, 0, 2),
+            (10, 1, 145, 0, 3),
+            (10, 1, 155, 0, 4),
+            (1, 1, 999, 25, 27),  # Lower limit object
+        ]
 
+        # Process level data
+        for platform in level_data:
+            width, height, x, y, type_index, *optional_msg = platform
+            platform_type = self.get_platform_type(platform_types, type_index)
+            self.create_platform(width, height, x, y, platform_type, platform_images, optional_msg, player)
 
-    def create_block_group(self, width, height, x, y, block_type, message):
-      for row in range(height):
-          for col in range(width):
-              block = self.create_block(block_type, x + col, y + row, message)
-              if block:
-                  self.platform_list.add(block)
+    def get_platform_type(self, platform_types, index):
+        """Returns the platform type based on its index."""
+        return platform_types[index] if index < len(platform_types) else ""
 
-    def create_block(self, block_type, x, y, message):
-        block = Platform(TILE_SIZE, TILE_SIZE)
-        block.rect.x = x * TILE_SIZE
-        block.rect.y = y * TILE_SIZE
-        block.type = block_type
+    def create_platform(self, width, height, x, y, platform_type, platform_images, optional_msg, player):
+        """Creates and adds platforms based on type."""
+        img_file = platform_images.get(platform_type, "floorTile.PNG")
 
-        #Load image from BLOCK_IMAGES, default to normal block image if not found
-        image_path = os.path.join("blockimages/Tiles", BLOCK_IMAGES.get(block_type, "floorTile.PNG"))
-        try:
-            block.image = pygame.image.load(image_path).convert()
-        except pygame.error as e:
-            print(f"Error loading image {image_path}: {e}")
-            return None
+        for row in range(height):
+            for col in range(width):
+                block = Platform(64, 64)
+                block.rect.x = (x + col) * 64
+                block.rect.y = (y + row) * 64
+                block.type = platform_type
+                block.image = pygame.image.load(os.path.join('blockimages/Tiles', img_file)).convert()
 
-        if block_type == "message":
-            block.message = message[0] #Extract the message from the list
+                if platform_type == "spawn":
+                    player.rect.bottom = block.rect.top  # Set spawn position
 
-        return block
+                if platform_type == "message" and optional_msg:
+                    block.message = optional_msg[0]
+
+                self.platform_list.add(block)
